@@ -1,4 +1,4 @@
-package po.symulacja.fire;
+package po.simulation.fire;
 
 
 public class Fire {
