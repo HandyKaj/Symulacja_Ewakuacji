@@ -169,7 +169,7 @@ public class Board {
             for (int x = 0; x < width; x++) {
                 Cell cell = grid[x][y];
                 if (cell.hasFire())              System.out.print("F ");
-                else if (!cell.isEmpty())        System.out.print("A ");
+                else if (!cell.isEmpty())        System.out.print(cell.getAgent().getDisplayChar() + " ");
                 else if (cell.getType() == CellType.WALL)   System.out.print("# ");
                 else if (cell.getType() == CellType.EXIT)   System.out.print("E ");
                 else if (cell.getType() == CellType.ROOM)   System.out.print(". ");

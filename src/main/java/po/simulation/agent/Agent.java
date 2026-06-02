@@ -10,6 +10,7 @@ import java.util.List;
 public abstract class Agent {
 
     protected int id;
+    protected String name;
     protected int x;
     protected int y;
     protected float speed;
@@ -17,8 +18,9 @@ public abstract class Agent {
     protected AgentState state;
     protected Board board;
 
-    public Agent(int id, Board board, int x, int y) {
+    public Agent(int id, String name, Board board, int x, int y) {
         this.id = id;
+        this.name = name;
         this.board = board;
         this.x = x;
         this.y = y;
@@ -30,6 +32,7 @@ public abstract class Agent {
 
     public abstract void step();
 
+    public abstract char getDisplayChar(); //name displayed insted of A for everyone
 
     public List<Cell> perceive() {
         return board.getNeighbors(x, y);
@@ -59,6 +62,7 @@ public abstract class Agent {
         if (current != null && current.getType() == po.simulation.model.CellType.EXIT) {
             state = AgentState.EVACUATED;
             board.removeAgent(this);
+            System.out.println("Evacutated: " + name );
         }
     }
 
@@ -67,6 +71,7 @@ public abstract class Agent {
     }
 
 
+    public String getName()      { return name; }
     public int getId()           { return id; }
     public int getX()            { return x; }
     public int getY()            { return y; }
@@ -84,7 +89,7 @@ public abstract class Agent {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "#" + id +
-                "(" + x + "," + y + ") panic=" + panic + " state=" + state;
+        return name + " (" + getClass().getSimpleName() + "#" + id + ") " +
+                "at (" + x + "," + y + ") panic=" + panic + " state=" + state;
     }
 }
