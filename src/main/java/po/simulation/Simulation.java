@@ -150,7 +150,9 @@ public class Simulation {
 
     private void printStatus() {
         long alive = agents.stream()
-                .filter(a -> a.getState() == AgentState.IN_BUILDING).count();
+                .filter(a -> a.getState() == AgentState.IN_BUILDING
+                        || a.getState() == AgentState.INJURED
+                        || a.getState() == AgentState.CARRIED).count();
         long injured = agents.stream()
                 .filter(a -> a.getState() == AgentState.INJURED).count();
         System.out.println("W budynku: " + alive +

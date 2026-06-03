@@ -38,17 +38,30 @@ public class Main {
 
 
         Simulation sim = new Simulation(50, 30, config);
-
-
+        sim.initialize();
         Board board = sim.getBoard();
+
+
+        for (int y = 1; y < 20; y++) {
+            board.getCell(25, y).setType(CellType.WALL);
+        }
+
+        board.getCell(25, 10).setType(CellType.CORRIDOR);
+
+
+        for (int y = 1; y < 15; y++) {
+            board.getCell(35, y).setType(CellType.WALL);
+        }
+
+        board.getCell(35, 7).setType(CellType.CORRIDOR);
 
         board.getCell(48, 15).setType(CellType.EXIT);
         board.getCell(48, 16).setType(CellType.EXIT);
 
 
         board.getCell(2, 2).setFire(new Fire(80));
-        board.getCell(25, 15).setFire(new Fire(60));
-        board.getCell(10, 10).setFire(new Fire(50));
+//        board.getCell(25, 15).setFire(new Fire(60));
+//        board.getCell(10, 10).setFire(new Fire(50));
 
 
         AgentFactory factory = AgentFactory.getInstance();
