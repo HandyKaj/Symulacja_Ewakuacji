@@ -4,7 +4,7 @@ import po.simulation.board.Board;
 import po.simulation.board.Cell;
 import po.simulation.agent.AgentFactory;
 import po.simulation.agent.Agent;
-import po.simulation.engine.Engine;
+import po.simulation.config.SimConfig;
 import po.simulation.model.CellType;
 import po.simulation.fire.Fire;
 
@@ -18,7 +18,7 @@ public class Main {
 
         System.out.println("====== FIRE EVACUATION SIMULATION CONFIGURATOR ======");
 
-        // Setting up agents from console
+
         System.out.print("Enter number of CALM agents: ");
         int numCalm = scanner.nextInt();
 
@@ -34,77 +34,47 @@ public class Main {
         System.out.print("Enter number of FIREFIGHTERS: ");
         int numFirefighters = scanner.nextInt();
 
-        //---------------------------------------------============------------------------------------
-        //board
-        int width = 50;
-        int height = 30;
-        Board board = new Board(width, height);
+        SimConfig config = new SimConfig(0.3f, 0.3f, 3, 10);
 
-        for (int y = 0; y < height; y++) {
-            board.getCell(0, y).setType(CellType.WALL);
-            board.getCell(width - 1, y).setType(CellType.WALL);
-        }
-        for (int x = 0; x < width; x++) {
-            board.getCell(x, 0).setType(CellType.WALL);
-            board.getCell(x, height - 1).setType(CellType.WALL);
-        }
-        //---------------------------------------------================-------------------------
 
-        board.getCell(width-2, 30/2).setType(CellType.EXIT);
-        board.getCell(width-2, 30/2+1).setType(CellType.EXIT);
+        Simulation sim = new Simulation(50, 30, config);
 
-        //set fire
-        board.getCell(2, 2).setFire(new Fire(40));
 
-        //start THE FACTORY
+        Board board = sim.getBoard();
+
+        board.getCell(48, 15).setType(CellType.EXIT);
+        board.getCell(48, 16).setType(CellType.EXIT);
+
+
+        board.getCell(2, 2).setFire(new Fire(80));
+        board.getCell(25, 15).setFire(new Fire(60));
+        board.getCell(10, 10).setFire(new Fire(50));
+
+
         AgentFactory factory = AgentFactory.getInstance();
         int currentId = 1;
 
-        currentId = spawnAgentsRandomly(board, factory, "CALM", numCalm, currentId, random);
-        currentId = spawnAgentsRandomly(board, factory, "PANICKING", numPanic, currentId, random);
-        currentId = spawnAgentsRandomly(board, factory, "ALTRUIST", numAltruist, currentId, random);
-        currentId = spawnAgentsRandomly(board, factory, "INJURED", numInjured, currentId, random);
-        currentId = spawnAgentsRandomly(board, factory, "FIREFIGHTER", numFirefighters, currentId, random);
-        // 6. Initialize Sequential Simulation Engine
-        Engine engine = new Engine(board);
+        currentId = spawnAgentsRandomly(sim,board, factory, "CALM", numCalm, currentId, random);
+        currentId = spawnAgentsRandomly(sim,board, factory, "PANICKING", numPanic, currentId, random);
+        currentId = spawnAgentsRandomly(sim,board, factory, "ALTRUIST", numAltruist, currentId, random);
+        currentId = spawnAgentsRandomly(sim,board, factory, "INJURED", numInjured, currentId, random);
+        currentId = spawnAgentsRandomly(sim,board, factory, "FIREFIGHTER", numFirefighters, currentId, random);
 
-        // 7. Start Simulation Run Loop
+
+
+
         System.out.println("\n====== SIMULATION STARTED ======");
         board.printBoard();
 
-        int totalTicks = 60;
-        for (int tick = 1; tick <= totalTicks; tick++) {
-            System.out.println("\n--- TICK " + tick + " ---");
-
-            // Execute sequential single-threaded updates
-            engine.runSingleTick();
-
-            // Print visual grid representation
-            board.printBoard();
-
-            // Check termination conditions
-            if (board.getAgents().isEmpty()) {
-                System.out.println("\n[Simulation Finished]: All agents evacuated or died.");
-                break;
-            }
-
-            try {
-                Thread.sleep(500); // 500ms delay per frame
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Simulation interrupted.");
-                break;
-            }
-        }
+        sim.run(60);
 
         System.out.println("\n====== SIMULATION ENDED ======");
+        sim.exportMetrics();
         scanner.close();
     }
 
 
-
-
-    private static int spawnAgentsRandomly(Board board, AgentFactory factory, String type,
+    private static int spawnAgentsRandomly(Simulation sim,Board board, AgentFactory factory, String type,
                                            int count, int startId, Random random) {
         int id = startId;
         int maxAttempts = 1000;
@@ -120,21 +90,20 @@ public class Main {
 
                 Cell targetCell = board.getCell(rx, ry);
 
-                // rules for agents
+
                 if (targetCell != null && targetCell.isEmpty() && !targetCell.hasFire()
                         && targetCell.getType() != CellType.WALL
                         && targetCell.getType() != CellType.EXIT) {
 
-                    // creating with factory agents
-                    Agent agent = factory.createAgent(type, id, name,board, rx, ry);
-                    board.placeAgent(agent, rx, ry);
 
+                    Agent agent = factory.createAgent(type, id, name, board, rx, ry);
+                    sim.addAgent(agent);
                     id++;
                     spawned = true;
                 }
             }
             if (attempts >= maxAttempts) {
-                System.out.println("Warning: Grid is full! Could not spawn all requested " + type );
+                System.out.println("Warning: Grid is full! Could not spawn all requested " + type);
                 break;
             }
         }

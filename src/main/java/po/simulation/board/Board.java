@@ -168,12 +168,23 @@ public class Board {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 Cell cell = grid[x][y];
-                if (cell.hasFire())              System.out.print("F ");
-                else if (!cell.isEmpty())        System.out.print(cell.getAgent().getDisplayChar() + " ");
-                else if (cell.getType() == CellType.WALL)   System.out.print("# ");
-                else if (cell.getType() == CellType.EXIT)   System.out.print("E ");
+                if (cell.hasFire())
+                    System.out.print("\u001B[31mF \u001B[0m"); // красный
+                else if (!cell.isEmpty()) {
+                    char c = cell.getAgent().getDisplayChar();
+                    switch (c) {
+                        case 'C' -> System.out.print("\u001B[32mC \u001B[0m"); // зелёный
+                        case 'P' -> System.out.print("\u001B[35mP \u001B[0m"); // фиолетовый
+                        case 'A' -> System.out.print("\u001B[34mA \u001B[0m"); // синий
+                        case 'I' -> System.out.print("\u001B[33mI \u001B[0m"); // жёлтый
+                        case 'S' -> System.out.print("\u001B[36mS \u001B[0m"); // голубой
+                        default  -> System.out.print("\u001B[37m" + c + " \u001B[0m");
+                    }
+                }
+                else if (cell.getType() == CellType.WALL)   System.out.print("\u001B[90m# \u001B[0m"); // серый
+                else if (cell.getType() == CellType.EXIT)   System.out.print("\u001B[92mE \u001B[0m"); // ярко-зелёный
                 else if (cell.getType() == CellType.ROOM)   System.out.print(". ");
-                else                             System.out.print("  ");
+                else System.out.print("  ");
             }
             System.out.println();
         }
