@@ -77,7 +77,6 @@ public class Simulation {
         for (Agent agent : snapshot) {
             handleAgentOnFire(agent);
         }
-
         board.spreadFire();
 
 
