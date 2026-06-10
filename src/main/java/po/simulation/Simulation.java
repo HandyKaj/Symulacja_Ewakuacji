@@ -1,6 +1,5 @@
 package po.simulation;
 
-
 import po.simulation.agent.Agent;
 import po.simulation.board.Board;
 import po.simulation.board.Cell;
@@ -9,12 +8,12 @@ import po.simulation.fire.Fire;
 import po.simulation.metrics.SimMetrics;
 import po.simulation.model.AgentState;
 import po.simulation.model.CellType;
-
 import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
+
 
 public class Simulation {
-
     private Board board;
     private List<Agent> agents;
     private int stepCount;
@@ -33,8 +32,6 @@ public class Simulation {
 
 
     public void initialize() {
-
-        // Ściany dookoła
         for (int x = 0; x < board.getWidth(); x++) {
             board.getCell(x, 0).setType(CellType.WALL);
             board.getCell(x, board.getHeight() - 1).setType(CellType.WALL);
@@ -44,19 +41,23 @@ public class Simulation {
             board.getCell(board.getWidth() - 1, y).setType(CellType.WALL);
         }
 
-        // Wyjście awaryjne
         board.getCell(board.getWidth() - 1, board.getHeight() / 2).setType(CellType.EXIT);
-
-        // Startowe ognisko pożaru
         int fireX = board.getWidth() / 2;
         int fireY = board.getHeight() / 2;
-        board.getCell(fireX, fireY).setFire(
-                new Fire(30)
-        );
-
+        board.getCell(fireX, fireY).setFire(new Fire(30));
         isRunning = true;
-        System.out.println("Symulacja zainicjalizowana. Plansza " +
-                board.getWidth() + "x" + board.getHeight());
+        System.out.println("Symulacja zainicjalizowana. Plansza " + board.getWidth() + "x" + board.getHeight());
+    }
+
+    private final Map<String, Integer> evacuatedByType = new HashMap<>();
+    private final Map<String, Integer> deadByType = new HashMap<>();
+
+    public Map<String, Integer> getEvacuatedByType() {
+        return evacuatedByType;
+    }
+
+    public Map<String, Integer> getDeadByType() {
+        return deadByType;
     }
 
 
@@ -73,29 +74,27 @@ public class Simulation {
             }
         }
 
-
         for (Agent agent : snapshot) {
             handleAgentOnFire(agent);
         }
         board.spreadFire();
-
 
         if (stepCount == config.getFirefighterDelay()) {
             spawnFirefighters();
         }
         for (Agent agent : snapshot) {
             if (agent.getState() == AgentState.EVACUATED) {
+                String type = agent.getClass().getSimpleName();
+                evacuatedByType.merge(type, 1, Integer::sum);
                 metrics.registerEvacuation(stepCount);
             }
         }
 
-        agents.removeIf(a -> a.getState() == AgentState.EVACUATED
-                || a.getState() == AgentState.DEAD);
 
 
+        agents.removeIf(a -> a.getState() == AgentState.EVACUATED || a.getState() == AgentState.DEAD);
         board.printBoard();
         printStatus();
-
 
         if (agents.isEmpty()) {
             isRunning = false;
@@ -104,7 +103,6 @@ public class Simulation {
         }
     }
 
-
     public void run(int steps) {
         isRunning = true;
         for (int i = 0; i < steps && isRunning; i++) {
@@ -112,18 +110,33 @@ public class Simulation {
         }
     }
 
-
     public void addAgent(Agent agent) {
         agents.add(agent);
         board.placeAgent(agent, agent.getX(), agent.getY());
     }
-
 
     public void removeAgent(Agent agent) {
         agents.remove(agent);
         board.removeAgent(agent);
     }
 
+    public List<Agent> getAgents() {
+        return agents;
+    }
+
+    public long getAliveCount() {
+        return agents.stream()
+                .filter(a -> a.getState() == po.simulation.model.AgentState.IN_BUILDING
+                        || a.getState() == po.simulation.model.AgentState.INJURED
+                        || a.getState() == po.simulation.model.AgentState.CARRIED)
+                .count();
+    }
+
+    public long getInjuredCount() {
+        return agents.stream()
+                .filter(a -> a.getState() == po.simulation.model.AgentState.INJURED)
+                .count();
+    }
 
     private void handleAgentOnFire(Agent agent) {
         Cell cell = board.getCell(agent.getX(), agent.getY());
@@ -133,6 +146,8 @@ public class Simulation {
                 agent.setState(AgentState.DEAD);
                 board.removeAgent(agent);
                 metrics.registerDeath();
+                String type = agent.getClass().getSimpleName();
+                deadByType.merge(type, 1, Integer::sum);
                 System.out.println(agent + " zginął w ogniu!");
             } else if (intensity > 50 && agent.getState() == AgentState.IN_BUILDING) {
                 agent.setState(AgentState.INJURED);
@@ -141,12 +156,9 @@ public class Simulation {
         }
     }
 
-
     private void spawnFirefighters() {
-
         System.out.println("Strażacy wkraczają do budynku!");
     }
-
 
     private void printStatus() {
         long alive = agents.stream()
@@ -165,6 +177,8 @@ public class Simulation {
     public Board getBoard()        { return board; }
     public int getStepCount()      { return stepCount; }
     public boolean isRunning()     { return isRunning; }
+
+
 
     public void exportMetrics() {
         metrics.export();

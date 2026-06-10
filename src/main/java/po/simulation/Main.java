@@ -8,13 +8,16 @@ import po.simulation.board.Cell;
 import po.simulation.config.SimConfig;
 import po.simulation.fire.Fire;
 import po.simulation.model.CellType;
+import po.simulation.model.AgentState;
 
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Random;
+import java.util.*;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import java.util.Random;
 
 public class Main {
     private final JFrame frame = new JFrame("Symulacja Ewakuacji Pożarowej (Swing)");
@@ -40,9 +43,19 @@ public class Main {
     private final JButton btnStep = new JButton("Do 1 move (Tick)");
     private final JButton btnAuto = new JButton("Start Auto-run");
 
+    // Etykiety statystyk w lewym panelu bocznym
+    private final JLabel lblInBuilding = new JLabel("W budynku: 0");
+    private final JLabel lblInjured = new JLabel("Rannych: 0");
+    private final JLabel lblEvacuated = new JLabel("Ewakuowanych: 0");
+    private final JLabel lblKilled = new JLabel("Zabitych: 0");
+
+    private final List<Integer> panicHistory = new ArrayList<>();
+    private final Map<String, int[]> classStats = new HashMap<>(); // Klasa -> [Uciekło, Umarło]
+    private BarChartPanel barChartPanel;
+
     public Main() {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1280, 800);
+        frame.setSize(1600, 900);
         frame.setLocationRelativeTo(null);
 
         setupConfigPanel();
@@ -51,7 +64,6 @@ public class Main {
         frame.add(mainPanel);
         cardLayout.show(mainPanel, "CONFIG");
 
-        // Closing thread upon closing window
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -61,11 +73,21 @@ public class Main {
         });
     }
 
+    private void initClassStats() {
+        classStats.clear();
+        classStats.put("Calm", new int[]{0, 0});
+        classStats.put("Panicking", new int[]{0, 0});
+        classStats.put("Altruist", new int[]{0, 0});
+        classStats.put("Injured", new int[]{0, 0});
+        classStats.put("Firefighter", new int[]{0, 0});
+    }
+
     public void show() {
         frame.setVisible(true);
     }
 
     private void setupConfigPanel() {
+
         JPanel configPanel = new JPanel();
         configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
         configPanel.setBorder(new EmptyBorder(32, 32, 32, 32));
@@ -84,7 +106,7 @@ public class Main {
 
         configPanel.add(Box.createVerticalStrut(20));
 
-        JButton btnInit = new JButton("Initialize simulation");
+        JButton btnInit = new JButton("Start simulation");
         btnInit.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnInit.setPreferredSize(new Dimension(200, 40));
         btnInit.setMaximumSize(new Dimension(200, 40));
@@ -95,10 +117,8 @@ public class Main {
             Integer injured = tryParseInt(txtInjured.getText());
             Integer firefighters = tryParseInt(txtFirefighters.getText());
 
-            // Initialization of starting config
             simulationInstance = startAndSetupSimulationSwing(calm, panic, altruist, injured, firefighters);
-
-            // Build of dynamic setting panel
+            initClassStats();
             rebuildSimulationPanel();
             cardLayout.show(mainPanel, "SIMULATION");
         });
@@ -127,10 +147,9 @@ public class Main {
         JPanel simPanel = new JPanel(new BorderLayout(16, 16));
         simPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // left config
         JPanel controlPanel = new JPanel();
         controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
-        controlPanel.setPreferredSize(new Dimension(250, 800));
+        controlPanel.setPreferredSize(new Dimension(320, 800));
 
         JLabel lblControlTitle = new JLabel("Control Panel");
         lblControlTitle.setFont(new Font("Arial", Font.BOLD, 18));
@@ -149,7 +168,6 @@ public class Main {
         btnStep.setMaximumSize(new Dimension(240, 35));
         btnStep.setEnabled(sim.isRunning() && !isAutoPlaying);
 
-        // Remove old action listeners to avoid stacking them up on rebuilding
         for (java.awt.event.ActionListener al : btnStep.getActionListeners()) {
             btnStep.removeActionListener(al);
         }
@@ -190,10 +208,33 @@ public class Main {
             cardLayout.show(mainPanel, "CONFIG");
         });
         controlPanel.add(btnBack);
+        controlPanel.add(Box.createVerticalStrut(20));
+
+        JLabel statsTitle = new JLabel("Aktualne statystyki:");
+        statsTitle.setFont(new Font("Arial", Font.BOLD, 14));
+        controlPanel.add(statsTitle);
+        controlPanel.add(Box.createVerticalStrut(8));
+
+        lblInBuilding.setFont(new Font("Arial", Font.PLAIN, 13));
+        lblInjured.setFont(new Font("Arial", Font.PLAIN, 13));
+        lblEvacuated.setFont(new Font("Arial", Font.PLAIN, 13));
+        lblKilled.setFont(new Font("Arial", Font.PLAIN, 13));
+
+        controlPanel.add(lblInBuilding);
+        controlPanel.add(Box.createVerticalStrut(4));
+        controlPanel.add(lblInjured);
+        controlPanel.add(Box.createVerticalStrut(4));
+        controlPanel.add(lblEvacuated);
+        controlPanel.add(Box.createVerticalStrut(4));
+        controlPanel.add(lblKilled);
+        controlPanel.add(Box.createVerticalStrut(20));
+
+        barChartPanel = new BarChartPanel();
+        controlPanel.add(barChartPanel);
+        controlPanel.add(Box.createVerticalStrut(10));
 
         simPanel.add(controlPanel, BorderLayout.WEST);
 
-        // Board visualization
         JPanel rightPanel = new JPanel(new BorderLayout());
         JLabel lblBoardTitle = new JLabel("Burning Building Visualization", SwingConstants.CENTER);
         lblBoardTitle.setFont(new Font("Arial", Font.BOLD, 14));
@@ -202,14 +243,13 @@ public class Main {
 
         boardPanel = new BoardPanel(sim.getBoard());
         rightPanel.add(boardPanel, BorderLayout.CENTER);
-
         simPanel.add(rightPanel, BorderLayout.CENTER);
 
-        // main container update
         mainPanel.remove(mainPanel.getComponent(1));
         mainPanel.add(simPanel, "SIMULATION");
         mainPanel.revalidate();
         mainPanel.repaint();
+        updateUIState();
     }
 
     private void startAutoRun() {
@@ -218,15 +258,12 @@ public class Main {
         isAutoPlaying = true;
         btnAuto.setText("Stop Auto-run");
         btnStep.setEnabled(false);
-
         simThread = new Thread(() -> {
             while (isAutoPlaying && sim.isRunning()) {
                 sim.step();
-
                 SwingUtilities.invokeLater(this::updateUIState);
-
                 try {
-                    Thread.sleep(200); // delay for 1 tick
+                    Thread.sleep(200);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -248,14 +285,43 @@ public class Main {
     private void updateUIState() {
         Simulation sim = simulationInstance;
         if (sim == null) return;
+
         lblStep.setText("Current Step: " + sim.getStepCount());
         lblStatus.setText("Status: " + (sim.isRunning() ? "Running" : "Finished"));
+
+        lblInBuilding.setText("W budynku: " + sim.getAliveCount());
+        lblInjured.setText("Rannych: " + sim.getInjuredCount());
+        lblEvacuated.setText("Ewakuowanych: " + sim.getMetrics().getEvacuatedCount());
+        lblKilled.setText("Zabitych: " + sim.getMetrics().getDeadCount());
+        classStats.clear();
+
+        String[] classes = {
+                "Calm",
+                "Panicking",
+                "Altruist",
+                "Injured",
+                "Firefighter"
+        };
+
+        for (String type : classes) {
+
+            int evacuated = sim.getEvacuatedByType().getOrDefault(type, 0);
+
+            int dead = sim.getDeadByType().getOrDefault(type, 0);
+
+            classStats.put(type, new int[]{evacuated, dead});
+        }
+
+
         if (!sim.isRunning()) {
             btnStep.setEnabled(false);
             btnAuto.setEnabled(false);
         }
         if (boardPanel != null) {
-            boardPanel.repaint(); // Force update of tiles
+            boardPanel.repaint();
+        }
+        if (barChartPanel != null) {
+            barChartPanel.repaint();
         }
     }
 
@@ -267,7 +333,6 @@ public class Main {
         }
     }
 
-    // Map Construction logic completely converted to native Java
     public static Simulation startAndSetupSimulationSwing(int calm, int panic, int altruist, int injured, int firefighters) {
         Random random = new Random();
         SimConfig config = new SimConfig(0.3f, 0.3f, 3, 10);
@@ -341,8 +406,14 @@ public class Main {
             board.getCell(x, height - 1).setType(CellType.EXIT);
         }
 
-        board.getCell(2, 2).setFire(new Fire(80));
-        board.getCell(2, 97).setFire(new Fire(80));
+        int x = random.nextInt(98) + 1;
+        int y = random.nextInt(98) + 1;
+
+        board.getCell(x, y).setFire(new Fire(80));
+
+
+
+
 
         AgentFactory factory = AgentFactory.getInstance();
         int currentId = 1;
@@ -371,7 +442,6 @@ public class Main {
                 int rx = random.nextInt(board.getWidth());
                 int ry = random.nextInt(board.getHeight());
                 Cell targetCell = board.getCell(rx, ry);
-
                 if (targetCell != null && targetCell.isEmpty() && !targetCell.hasFire() &&
                         targetCell.getType() != CellType.WALL && targetCell.getType() != CellType.EXIT
                 ) {
@@ -388,10 +458,9 @@ public class Main {
         return id;
     }
 
-    // Rendering board using Graphics2D
     private static class BoardPanel extends JPanel {
         private final Board board;
-        private final int cellSize = 7; // size of a Cell
+        private final int cellSize = 7;
 
         public BoardPanel(Board board) {
             this.board = board;
@@ -408,7 +477,6 @@ public class Main {
 
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setFont(new Font("SansSerif", Font.BOLD, 6));
-
             for (int y = 0; y < board.getHeight(); y++) {
                 for (int x = 0; x < board.getWidth(); x++) {
                     Cell cell = board.getCell(x, y);
@@ -428,24 +496,12 @@ public class Main {
                     } else if (cell.getAgent() != null) {
                         String agentType = cell.getAgent().getClass().getSimpleName();
                         switch (agentType) {
-                            case "Calm":
-                                color = new Color(0xFF1976D2);
-                                break;
-                            case "Panicking":
-                                color = new Color(0xFFE65100);
-                                break;
-                            case "Altruist":
-                                color = new Color(0xFF8E24AA);
-                                break;
-                            case "Injured":
-                                color = new Color(0xFFFBC02D);
-                                break;
-                            case "Firefighter":
-                                color = new Color(0xFF00ACC1);
-                                break;
-                            default:
-                                color = Color.BLUE;
-                                break;
+                            case "Calm": color = new Color(0xFF1976D2); break;
+                            case "Panicking": color = new Color(0xFFE65100); break;
+                            case "Altruist": color = new Color(0xFF8E24AA); break;
+                            case "Injured": color = new Color(0xFFFBC02D); break;
+                            case "Firefighter": color = new Color(0xFF00ACC1); break;
+                            default: color = Color.BLUE; break;
                         }
                     } else {
                         color = Color.WHITE;
@@ -456,13 +512,45 @@ public class Main {
 
                     g2d.setColor(color);
                     g2d.fillRect(px, py, cellSize, cellSize);
-
                     if (cell.getAgent() != null) {
                         String letter = cell.getAgent().getClass().getSimpleName().substring(0, 1);
                         g2d.setColor(Color.WHITE);
                         g2d.drawString(letter, px + 1, py + cellSize - 1);
                     }
                 }
+            }
+        }
+    }
+
+    private class BarChartPanel extends JPanel {
+        public BarChartPanel() {
+            setPreferredSize(new Dimension(500, 160));
+            setMaximumSize(new Dimension(500, 160));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+
+            String[] classes = {"Calm", "Panicking", "Altruist", "Injured", "Firefighter"};
+            int x = 15;
+
+            for (String c : classes) {
+                int[] stats = classStats.getOrDefault(c, new int[]{0, 0});
+                int escaped = stats[0];
+                int dead = stats[1];
+
+                g2.setColor(new Color(0xFF2E7D32));
+                g2.fillRect(x, 120 - escaped * 4, 15, escaped * 4);
+
+                g2.setColor(new Color(0xFFD32F2F));
+                g2.fillRect(x + 18, 120 - dead * 4, 15, dead * 4);
+
+                g2.setColor(Color.BLACK);
+                g2.setFont(new Font("Arial", Font.PLAIN, 10));
+                g2.drawString(c.substring(0, Math.min(c.length(), 4)), x, 135);
+                x += 55;
             }
         }
     }
