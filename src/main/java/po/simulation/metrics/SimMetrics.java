@@ -1,12 +1,9 @@
 package po.simulation.metrics;
 
 public class SimMetrics {
-
     private int evacuatedCount;
     private int deadCount;
     private float avgEvacTime;
-
-
     private int totalEvacTicks;
 
     public SimMetrics() {
@@ -16,13 +13,11 @@ public class SimMetrics {
         this.totalEvacTicks = 0;
     }
 
-
     public void registerEvacuation(int tick) {
         evacuatedCount++;
         totalEvacTicks += tick;
         avgEvacTime = (float) totalEvacTicks / evacuatedCount;
     }
-
 
     public void registerDeath() {
         deadCount++;
@@ -32,7 +27,7 @@ public class SimMetrics {
         System.out.println("=== Metryki symulacji ===");
         System.out.println("Ewakuowanych: " + evacuatedCount);
         System.out.println("Zabitych:     " + deadCount);
-        System.out.printf ("Średni czas ewakuacji: %.1f ticków%n", avgEvacTime);
+        System.out.printf("Średni czas ewakuacji: %.1f ticków%n", avgEvacTime);
     }
 
     public int getEvacuatedCount() { return evacuatedCount; }
