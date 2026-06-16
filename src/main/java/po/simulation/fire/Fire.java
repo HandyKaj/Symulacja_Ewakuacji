@@ -7,7 +7,7 @@ public class Fire {
 
     public Fire(int initialIntensity) {
         this.intensity = initialIntensity;
-        this.spreadSpeed = 0.3f;
+        this.spreadSpeed = 0.1f;
         this.threshold = 50;
     }
 

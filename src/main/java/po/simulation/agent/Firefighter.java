@@ -17,10 +17,22 @@ public class Firefighter extends Agent {
 
     @Override
     public void step() {
-        // turn off fire
-        suppressFireInVicinity();
-        moveTowardsExit(); // lead toward closest exit
-    }
+            suppressFireInVicinity();
+
+
+            boolean canReachSomeone = board.getAgents().stream()
+                    .filter(a -> a != this && !(a instanceof Firefighter))
+                    .anyMatch(a -> board.distanceToExit(a.getX(), a.getY()) != -1);
+
+            if (canReachSomeone) {
+                guideInjured();
+                moveTowardsAgents();
+            } else {
+                moveTowardsExit();
+            }
+        checkEvacuated();
+        }
+
 
     @Override
     public char getDisplayChar() {
@@ -55,6 +67,51 @@ public class Firefighter extends Agent {
         int minDistance = Integer.MAX_VALUE;
         for (Cell neighbor : neighbors) {
             // Firefighters gain higher fire tolerence
+            if (neighbor.getType() != po.simulation.model.CellType.WALL && neighbor.isEmpty()) {
+                int dist = board.distanceToExit(neighbor.getX(), neighbor.getY());
+                if (dist != -1 && dist < minDistance) {
+                    minDistance = dist;
+                    bestCell = neighbor;
+                }
+            }
+        }
+
+        if (bestCell != null) {
+            moveTo(bestCell.getX(), bestCell.getY());
+        }
+    }
+    public void guideInjured() {
+        List<Cell> neighbors = perceive();
+        for (Cell c : neighbors) {
+            if (c.getAgent() instanceof Injured injured && injured.needsHelp()) {
+                // двигаем раненого в направлении выхода
+                int dist = board.distanceToExit(c.getX(), c.getY());
+                List<Cell> injuredNeighbors = board.getNeighbors(c.getX(), c.getY());
+                Cell best = null;
+                int minDist = dist;
+                for (Cell n : injuredNeighbors) {
+                    if (n.isPassable() && n.isEmpty()) {
+                        int d = board.distanceToExit(n.getX(), n.getY());
+                        if (d != -1 && d < minDist) {
+                            minDist = d;
+                            best = n;
+                        }
+                    }
+                }
+                if (best != null) {
+                    injured.moveTo(best.getX(), best.getY());
+                    injured.checkEvacuated();
+                }
+                break;
+            }
+        }
+    }
+    private void moveTowardsAgents() {
+        List<Cell> neighbors = perceive();
+        Cell bestCell = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (Cell neighbor : neighbors) {
             if (neighbor.getType() != po.simulation.model.CellType.WALL && neighbor.isEmpty()) {
                 int dist = board.distanceToExit(neighbor.getX(), neighbor.getY());
                 if (dist != -1 && dist < minDistance) {

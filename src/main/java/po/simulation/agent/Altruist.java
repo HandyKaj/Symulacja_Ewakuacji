@@ -108,7 +108,7 @@ public class Altruist extends Agent {
             rescuedAgent.setState(AgentState.EVACUATED);
             board.removeAgent(this);
             board.removeAgent(rescuedAgent);
-            System.out.println(name + " evacuated with " + rescuedAgent.getName());
+
         }
     }
 

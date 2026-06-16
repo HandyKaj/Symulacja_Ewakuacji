@@ -17,6 +17,7 @@ public abstract class Agent {
     protected int panic;        // 0–100
     protected AgentState state;
     protected Board board;
+    protected int stuckTicks = 0;
 
     public Agent(int id, String name, Board board, int x, int y) {
         this.id = id;
@@ -40,10 +41,13 @@ public abstract class Agent {
 
 
     public void moveTo(int newX, int newY) {
-        if (board.inBounds(newX, newY) && board.getCell(newX, newY).isPassable()) {
-            board.moveAgent(this, newX, newY);
-            this.x = newX;
-            this.y = newY;
+        if (board.inBounds(newX, newY)) {
+            Cell target = board.getCell(newX, newY);
+            if (target.isPassable() && (target.isEmpty() || target.getType() == po.simulation.model.CellType.EXIT)) {
+                board.moveAgent(this, newX, newY);
+                this.x = newX;
+                this.y = newY;
+            }
         }
     }
 
@@ -62,7 +66,6 @@ public abstract class Agent {
         if (current != null && current.getType() == po.simulation.model.CellType.EXIT) {
             state = AgentState.EVACUATED;
             board.removeAgent(this);
-            System.out.println("Evacutated: " + name );
         }
     }
 
@@ -86,6 +89,8 @@ public abstract class Agent {
     public void setSpeed(float speed)    { this.speed = speed; }
     public void setState(AgentState s)   { this.state = s; }
     public void setPanic(int panic)      { this.panic = Math.max(0, Math.min(100, panic)); }
+    public int getStuckTicks()              { return stuckTicks; }
+    public void setStuckTicks(int stuckTicks) { this.stuckTicks = stuckTicks; }
 
     @Override
     public String toString() {

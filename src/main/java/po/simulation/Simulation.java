@@ -65,7 +65,6 @@ public class Simulation {
         if (!isRunning) return;
 
         stepCount++;
-        System.out.println("\n--- Tick " + stepCount + " ---");
 
         List<Agent> snapshot = new ArrayList<>(agents);
         for (Agent agent : snapshot) {
@@ -93,12 +92,10 @@ public class Simulation {
 
 
         agents.removeIf(a -> a.getState() == AgentState.EVACUATED || a.getState() == AgentState.DEAD);
-        board.printBoard();
-        printStatus();
+
 
         if (agents.isEmpty()) {
             isRunning = false;
-            System.out.println("\nSymulacja zakończona po " + stepCount + " tickach.");
             metrics.export();
         }
     }
@@ -148,12 +145,27 @@ public class Simulation {
                 metrics.registerDeath();
                 String type = agent.getClass().getSimpleName();
                 deadByType.merge(type, 1, Integer::sum);
-                System.out.println(agent + " zginął w ogniu!");
             } else if (intensity > 50 && agent.getState() == AgentState.IN_BUILDING) {
                 agent.setState(AgentState.INJURED);
-                System.out.println(agent + " został ranny!");
             }
         }
+        boolean canMove = board.getNeighbors(agent.getX(), agent.getY())
+                .stream().anyMatch(c -> c.isPassable() && c.isEmpty())
+        && board.distanceToExit(agent.getX(), agent.getY()) != -1;
+
+        if (!canMove) {
+            agent.setStuckTicks(agent.getStuckTicks() + 1);
+            if (agent.getStuckTicks() >= 30) {
+                agent.setState(AgentState.DEAD);
+                board.removeAgent(agent);
+                metrics.registerDeath();
+                String type = agent.getClass().getSimpleName();
+                deadByType.merge(type, 1, Integer::sum);
+            }
+        } else {
+            agent.setStuckTicks(0);
+        }
+
     }
 
     private void spawnFirefighters() {
@@ -167,10 +179,6 @@ public class Simulation {
                         || a.getState() == AgentState.CARRIED).count();
         long injured = agents.stream()
                 .filter(a -> a.getState() == AgentState.INJURED).count();
-        System.out.println("W budynku: " + alive +
-                " | Rannych: " + injured +
-                " | Ewakuowanych: " + metrics.getEvacuatedCount() +
-                " | Zabitych: " + metrics.getDeadCount());
     }
 
     public SimMetrics getMetrics() { return metrics; }
