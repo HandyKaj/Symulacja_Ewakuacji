@@ -5,10 +5,28 @@ import po.simulation.board.Cell;
 import po.simulation.model.AgentState;
 import java.util.List;
 
+/**
+ * Agent altruista — idzie do wyjścia najkrótszą drogą, ale aktywnie szuka rannych.
+ * Gdy znajdzie rannego w zasięgu wzroku (prostokąt 10×5), podchodzi do niego
+ * i prowadzi go do wyjścia z prędkością 0.5 (co drugi tick).
+ */
 public class Altruist extends Agent {
+
+    /** Ranny agent aktualnie prowadzony przez altruistę, lub null jeśli brak. */
     private Injured rescuedAgent = null;
+
+    /** Przełącznik do symulacji prędkości 0.5 podczas prowadzenia rannego — ruch co drugi tick. */
     private boolean internalTickFlip = false;
 
+    /**
+     * Tworzy altruistę na podanej pozycji.
+     *
+     * @param id    unikalny identyfikator agenta
+     * @param name  nazwa agenta
+     * @param board plansza symulacji
+     * @param x     początkowa współrzędna pozioma
+     * @param y     początkowa współrzędna pionowa
+     */
     public Altruist(int id, String name, Board board, int x, int y) {
         super(id, name, board, x, y);
         this.speed = 1.0f;
@@ -17,14 +35,13 @@ public class Altruist extends Agent {
     @Override
     public void step() {
         if (state == AgentState.EVACUATED || state == AgentState.DEAD) return;
-        if (rescuedAgent != null) {// carrying injured person - speed =0,5
+        if (rescuedAgent != null) { // carrying injured person - speed =0,5
             internalTickFlip = !internalTickFlip;
             if (!internalTickFlip) return;
 
             moveTowardsExitWithInjured();
             return;
         }
-
         // Scan the custom rectangular vision field (10x in length, 5y in width)
         Injured target = scanForInjuredPeople();
         if (target != null) {
@@ -34,11 +51,13 @@ public class Altruist extends Agent {
             moveNormallyToExit();
         }
     }
-    @Override
-    public char getDisplayChar() {
-        return 'A';
-    }
 
+    /**
+     * Skanuje prostokątne pole widzenia (10 pól w przód, ±2 w bok)
+     * w poszukiwaniu rannego agenta wymagającego pomocy.
+     *
+     * @return znaleziony ranny agent lub null jeśli brak
+     */
     private Injured scanForInjuredPeople() {
         // Vision in shape of a rectangle forward 10, width -2 to 2
         for (int dx = 0; dx <= 10; dx++) {
@@ -60,6 +79,9 @@ public class Altruist extends Agent {
         return null;
     }
 
+    /** Podchodzi do rannego i przejmuje go (ustawia stan CARRIED).
+     *
+          * @param target ranny agent do uratowania */
     private void rescueTarget(Injured target) {
 
         int nextX = this.x + Integer.compare(target.getX(), this.x);
@@ -76,6 +98,10 @@ public class Altruist extends Agent {
         }
     }
 
+    /**
+     * Prowadzi rannego do wyjścia — altruista przesuwa się na najlepszą komórkę,
+     * a ranny zajmuje jego poprzednią pozycję. Po dotarciu do wyjścia obaj są ewakuowani.
+     */
     private void moveTowardsExitWithInjured() {
         List<Cell> neighbors = perceive();
         Cell bestCell = null;
@@ -96,9 +122,7 @@ public class Altruist extends Agent {
             int oldX = this.x;
             int oldY = this.y;
             moveTo(bestCell.getX(), bestCell.getY());
-
-            // Move the escorted injured agent to the old position of Altruist
-            rescuedAgent.moveTo(oldX, oldY);
+            rescuedAgent.moveTo(oldX, oldY); // Move the escorted injured agent to the old position of Altruist
         }
 
         // Check if exit is reached to evacuate both agents
@@ -112,6 +136,7 @@ public class Altruist extends Agent {
         }
     }
 
+    /** Idzie do wyjścia najkrótszą drogą BFS gdy nie ma rannych w pobliżu. */
     private void moveNormallyToExit() {
         List<Cell> neighbors = perceive();
         Cell bestCell = null;

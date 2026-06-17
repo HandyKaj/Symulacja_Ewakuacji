@@ -2,6 +2,10 @@ package po.simulation.ui;
 
 import java.awt.Color;
 
+/**
+ * Centralne miejsce definicji kolorów używanych w interfejsie graficznym.
+ * Zapewnia spójną paletę kolorów (dark theme) w całej aplikacji.
+ */
 public class UIColors {
     public static final Color BG     = hex("#0f1117");
     public static final Color SIDE   = hex("#161b26");
@@ -14,8 +18,21 @@ public class UIColors {
     public static final Color YELLOW = hex("#fbbf24");
     public static final Color RED    = hex("#f87171");
 
+    /**
+     * Konwertuje kod heksadecymalny koloru na obiekt Color.
+     *
+     * @param h kod koloru w formacie "#RRGGBB"
+     * @return obiekt Color
+     */
     public static Color hex(String h) { return Color.decode(h); }
 
+    /**
+     * Zwraca kolor przypisany do danego typu agenta — używany do rysowania
+     * agentów na planszy w BoardPanel.
+     *
+     * @param type nazwa klasy agenta (np. "Calm", "Panicking")
+     * @return kolor odpowiadający typowi agenta
+     */
     public static Color agentColor(String type) {
         return switch (type) {
             case "Calm"        -> hex("#1976d2");

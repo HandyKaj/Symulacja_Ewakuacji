@@ -4,6 +4,10 @@ import po.simulation.agent.Agent;
 import po.simulation.fire.Fire;
 import po.simulation.model.CellType;
 
+/**
+ * Pojedyncza komórka na planszy symulacji.
+ * Może zawierać agenta i ogień. Typ komórki określa czy jest przejezdna.
+ */
 public class Cell {
     private int x;
     private int y;
@@ -11,6 +15,14 @@ public class Cell {
     private Agent agent;
     private Fire fire;
 
+    /**
+     * Tworzy nową komórkę o podanych współrzędnych i typie.
+     * Komórka jest początkowo pusta — bez agenta i bez ognia.
+     *
+     * @param x    współrzędna pozioma
+     * @param y    współrzędna pionowa
+     * @param type typ komórki (korytarz, ściana, wyjście itp.)
+     */
     public Cell(int x, int y, CellType type) {
         this.x = x;
         this.y = y;
@@ -19,14 +31,18 @@ public class Cell {
         this.fire = null;
     }
 
-    public boolean isEmpty() {
-        return agent == null;
-    }
+    /** @return true jeśli na komórce nie ma agenta */
+    public boolean isEmpty() { return agent == null; }
 
+    /** @return true jeśli na komórce nie ma agenta */
     public boolean hasFire() {
         return fire != null;
     }
 
+    /**
+     * @return true jeśli agent może wejść na tę komórkę —
+     * false dla ścian i komórek z blokującym ogniem
+     */
     public boolean isPassable() {
         if (type == CellType.WALL) return false;
         if (fire != null && fire.isBlocking()) return false;

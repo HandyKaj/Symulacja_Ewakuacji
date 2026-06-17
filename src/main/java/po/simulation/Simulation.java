@@ -11,8 +11,12 @@ import po.simulation.model.CellType;
 import java.util.ArrayList;
 import java.util.*;
 
-
-
+/**
+ * Główna klasa symulacji ewakuacji budynku podczas pożaru.
+ * Zarządza cyklem ticków: ruch agentów, interakcje z ogniem,
+ * rozprzestrzenianie ognia i aktualizacja metryk.
+ * Symulacja kończy się gdy wszyscy agenci opuszczą budynek.
+ */
 public class Simulation {
     private Board board;
     private List<Agent> agents;
@@ -20,7 +24,16 @@ public class Simulation {
     private boolean isRunning;
     private SimConfig config;
     private SimMetrics metrics;
+    private final Map<String, Integer> evacuatedByType = new HashMap<>();
+    private final Map<String, Integer> deadByType = new HashMap<>();
 
+    /**
+     * Tworzy nową symulację o podanych wymiarach planszy i konfiguracji.
+     *
+     * @param width  szerokość planszy
+     * @param height wysokość planszy
+     * @param config parametry konfiguracyjne symulacji
+     */
     public Simulation(int width, int height, SimConfig config) {
         this.board = new Board(width, height);
         this.agents = new ArrayList<>();
@@ -30,7 +43,10 @@ public class Simulation {
         this.metrics = new SimMetrics();
     }
 
-
+    /**
+     * Inicjalizuje planszę — ustawia ściany zewnętrzne, wyjście awaryjne
+     * i startowe ognisko pożaru w środku budynku.
+     */
     public void initialize() {
         for (int x = 0; x < board.getWidth(); x++) {
             board.getCell(x, 0).setType(CellType.WALL);
@@ -46,11 +62,8 @@ public class Simulation {
         int fireY = board.getHeight() / 2;
         board.getCell(fireX, fireY).setFire(new Fire(30));
         isRunning = true;
-        System.out.println("Symulacja zainicjalizowana. Plansza " + board.getWidth() + "x" + board.getHeight());
     }
 
-    private final Map<String, Integer> evacuatedByType = new HashMap<>();
-    private final Map<String, Integer> deadByType = new HashMap<>();
 
     public Map<String, Integer> getEvacuatedByType() {
         return evacuatedByType;
@@ -60,7 +73,17 @@ public class Simulation {
         return deadByType;
     }
 
-
+    /**
+     * Wykonuje jeden krok (tick) symulacji w następującej kolejności:
+     * <ol>
+     *   <li>Każdy żywy agent wykonuje swój step()</li>
+     *   <li>Sprawdzenie interakcji agentów z ogniem</li>
+     *   <li>Rozprzestrzenianie ognia</li>
+     *   <li>Rejestracja ewakuowanych agentów w metrykach</li>
+     *   <li>Usunięcie ewakuowanych i martwych agentów z listy</li>
+     *   <li>Sprawdzenie warunku końca symulacji</li>
+     * </ol>
+     */
     public void step() {
         if (!isRunning) return;
 
@@ -78,9 +101,6 @@ public class Simulation {
         }
         board.spreadFire();
 
-        if (stepCount == config.getFirefighterDelay()) {
-            spawnFirefighters();
-        }
         for (Agent agent : snapshot) {
             if (agent.getState() == AgentState.EVACUATED) {
                 String type = agent.getClass().getSimpleName();
@@ -93,34 +113,26 @@ public class Simulation {
 
         agents.removeIf(a -> a.getState() == AgentState.EVACUATED || a.getState() == AgentState.DEAD);
 
-
-        if (agents.isEmpty()) {
-            isRunning = false;
-            metrics.export();
-        }
     }
 
-    public void run(int steps) {
-        isRunning = true;
-        for (int i = 0; i < steps && isRunning; i++) {
-            step();
-        }
-    }
-
+    /**
+     * Dodaje agenta do symulacji i umieszcza go na planszy.
+     *
+     * @param agent agent do dodania
+     */
     public void addAgent(Agent agent) {
         agents.add(agent);
         board.placeAgent(agent, agent.getX(), agent.getY());
-    }
-
-    public void removeAgent(Agent agent) {
-        agents.remove(agent);
-        board.removeAgent(agent);
     }
 
     public List<Agent> getAgents() {
         return agents;
     }
 
+    /**
+     * @return liczba agentów aktualnie przebywających w budynku
+     * (stany: IN_BUILDING, INJURED, CARRIED)
+     */
     public long getAliveCount() {
         return agents.stream()
                 .filter(a -> a.getState() == po.simulation.model.AgentState.IN_BUILDING
@@ -129,12 +141,21 @@ public class Simulation {
                 .count();
     }
 
+    /** @return liczba rannych agentów aktualnie w budynku */
     public long getInjuredCount() {
         return agents.stream()
                 .filter(a -> a.getState() == po.simulation.model.AgentState.INJURED)
                 .count();
     }
 
+    /**
+     * Obsługuje interakcję agenta z ogniem na jego komórce.
+     * intensity {@literal >} 90 → śmierć; intensity {@literal >} 50 → ranny.
+     * Dodatkowo agent zablokowany przez 30 ticków z rzędu (brak dostępnej drogi
+     * do wyjścia) ginie z powodu uwięzienia.
+     *
+     * @param agent agent do sprawdzenia
+     */
     private void handleAgentOnFire(Agent agent) {
         Cell cell = board.getCell(agent.getX(), agent.getY());
         if (cell != null && cell.hasFire()) {
@@ -168,27 +189,9 @@ public class Simulation {
 
     }
 
-    private void spawnFirefighters() {
-        System.out.println("Strażacy wkraczają do budynku!");
-    }
-
-    private void printStatus() {
-        long alive = agents.stream()
-                .filter(a -> a.getState() == AgentState.IN_BUILDING
-                        || a.getState() == AgentState.INJURED
-                        || a.getState() == AgentState.CARRIED).count();
-        long injured = agents.stream()
-                .filter(a -> a.getState() == AgentState.INJURED).count();
-    }
-
     public SimMetrics getMetrics() { return metrics; }
     public Board getBoard()        { return board; }
     public int getStepCount()      { return stepCount; }
     public boolean isRunning()     { return isRunning; }
 
-
-
-    public void exportMetrics() {
-        metrics.export();
-    }
 }

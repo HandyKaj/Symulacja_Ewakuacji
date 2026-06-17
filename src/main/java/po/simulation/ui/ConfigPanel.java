@@ -5,6 +5,11 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.function.Consumer;
 
+/**
+ * Panel konfiguracji wyświetlany przed startem symulacji.
+ * Pozwala użytkownikowi ustawić liczbę agentów każdego typu
+ * przed uruchomieniem symulacji.
+ */
 public class ConfigPanel extends JPanel {
     private final JTextField txtCalm        = new JTextField("40", 8);
     private final JTextField txtPanic       = new JTextField("20", 8);
@@ -12,6 +17,12 @@ public class ConfigPanel extends JPanel {
     private final JTextField txtInjured     = new JTextField("6",  8);
     private final JTextField txtFirefighter = new JTextField("8",  8);
 
+    /**
+     * Tworzy panel konfiguracji.
+     *
+     * @param onStart funkcja wywoływana po kliknięciu "Uruchom symulację",
+     *                otrzymuje tablicę liczb agentów [calm, panic, altruist, injured, firefighter]
+     */
     public ConfigPanel(Consumer<int[]> onStart) {
         setBackground(UIColors.BG);
         setLayout(new GridBagLayout());
@@ -62,6 +73,15 @@ public class ConfigPanel extends JPanel {
         add(card);
     }
 
+    /**
+     * Dodaje jeden wiersz konfiguracji — kolorowy znacznik, etykieta typu agenta
+     * i pole tekstowe do wpisania liczby.
+     *
+     * @param p        panel do którego dodajemy wiersz
+     * @param label    nazwa typu agenta
+     * @param tf       pole tekstowe na wartość liczbową
+     * @param dotColor kolor znacznika odpowiadający kolorowi agenta na planszy
+     */
     private void addRow(JPanel p, String label, JTextField tf, String dotColor) {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
         row.setBackground(UIColors.SIDE);

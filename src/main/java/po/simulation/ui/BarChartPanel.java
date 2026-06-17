@@ -4,9 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Map;
 
+/**
+ * Panel rysujący wykres słupkowy liczby ewakuowanych i zabitych agentów
+ * w podziale na typ agenta (Calm, Panicking, Altruist, Injured, Firefighter).
+ */
 public class BarChartPanel extends JPanel {
     private final Map<String, int[]> typeStats;
 
+    /**
+     * Tworzy panel wykresu połączony z mapą statystyk wg typu agenta.
+     *
+     * @param typeStats mapa typ agenta → [liczba ewakuowanych, liczba zabitych]
+     */
     public BarChartPanel(Map<String, int[]> typeStats) {
         this.typeStats = typeStats;
         setBackground(UIColors.BG);
@@ -23,7 +32,7 @@ public class BarChartPanel extends JPanel {
         int w=W-pl-pr, h=H-pt-pb;
 
         String[] types  = {"Calm","Panicking","Altruist","Injured","Firefighter"};
-        String[] labels = {"Calm","Panic","Altr.","Injur.","FF"};
+        String[] labels = {"Calm","Panic","Altr.","Injur.","FF"};// shortened labels on the X axis
         int maxVal = 1;
         for (String t : types) {
             int[] s = typeStats.getOrDefault(t, new int[]{0,0});
@@ -31,8 +40,8 @@ public class BarChartPanel extends JPanel {
         }
 
         int n = types.length;
-        float groupW = (float)w/n;
-        float barW = groupW*0.28f;
+        float groupW = (float)w/n;// width intended for one group of posts
+        float barW = groupW*0.28f;// width of a single post
 
         g2.setColor(UIColors.hex("#1e2736")); g2.setStroke(new BasicStroke(0.5f));
         g2.drawLine(pl, pt+h, pl+w, pt+h);
@@ -40,21 +49,27 @@ public class BarChartPanel extends JPanel {
         for (int i=0;i<n;i++) {
             int[] s = typeStats.getOrDefault(types[i], new int[]{0,0});
             float gx = pl + i*groupW + groupW*0.08f;
+
+            // convert the values to the height of the bars in proportion to maxVal
             float eh = (float)s[0]/maxVal*h;
             float dh = (float)s[1]/maxVal*h;
 
+            // post of the evacuated (green)
             g2.setColor(UIColors.hex("#4ade80"));
             g2.fillRoundRect((int)gx,(int)(pt+h-eh),(int)barW,(int)Math.max(eh,1),2,2);
+            // dead post (red) - next to green
             g2.setColor(UIColors.hex("#f87171"));
             g2.fillRoundRect((int)(gx+barW+2),(int)(pt+h-dh),(int)barW,(int)Math.max(dh,1),2,2);
 
             if(s[0]>0){ g2.setColor(UIColors.hex("#4ade80")); g2.setFont(new Font("SansSerif",Font.PLAIN,9)); g2.drawString(String.valueOf(s[0]),(int)gx,(int)(pt+h-eh-2)); }
             if(s[1]>0){ g2.setColor(UIColors.hex("#f87171")); g2.setFont(new Font("SansSerif",Font.PLAIN,9)); g2.drawString(String.valueOf(s[1]),(int)(gx+barW+2),(int)(pt+h-dh-2)); }
 
+            // agent type label under the posts
             g2.setColor(UIColors.hex("#475569")); g2.setFont(new Font("SansSerif",Font.PLAIN,9));
             g2.drawString(labels[i],(int)(gx+barW/2-8),pt+h+pb-5);
         }
 
+        // legend in the upper right corner of the chart
         int lx = pl+w-130, ly = pt+8;
         g2.setColor(UIColors.hex("#4ade80")); g2.fillRoundRect(lx,ly-7,8,8,2,2);
         g2.setColor(UIColors.hex("#64748b")); g2.setFont(new Font("SansSerif",Font.PLAIN,9)); g2.drawString("Ewakuowani",lx+11,ly);

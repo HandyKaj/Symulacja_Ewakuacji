@@ -5,8 +5,22 @@ import po.simulation.board.Cell;
 import po.simulation.model.AgentState;
 import java.util.List;
 
+/**
+ * Spokojny agent — wybiera najkrótszą drogę do wyjścia algorytmem BFS.
+ * Omija ogniska pożaru i podąża za strażakiem lub altruistą jeśli są w pobliżu.
+ * Gdy poziom paniki osiągnie 70, zaczyna poruszać się chaotycznie.
+ */
 public class Calm extends Agent {
 
+    /**
+     * Tworzy spokojnego agenta na podanej pozycji.
+     *
+     * @param id    unikalny identyfikator agenta
+     * @param name  nazwa agenta
+     * @param board plansza symulacji
+     * @param x     początkowa współrzędna pozioma
+     * @param y     początkowa współrzędna pionowa
+     */
     public Calm(int id, String name, Board board, int x, int y) {
         super(id, name, board, x, y);
         this.speed = 1.0f;
@@ -49,11 +63,13 @@ public class Calm extends Agent {
         }
         checkEvacuated();
     }
-    @Override
-    public char getDisplayChar() {
-        return 'C';
-    }
 
+    /**
+     * Sprawdza czy w sąsiedztwie jest strażak lub altruista.
+     * Jeśli tak — agent podąża za nim zamiast szukać własnej drogi.
+     *
+     * @return komórka z liderem lub null jeśli brak
+     */
     private Cell findLeaderToFollow(List<Cell> neighbors) {
         for (Cell neighbor : neighbors) {
             if (!neighbor.isEmpty()) {
@@ -67,6 +83,7 @@ public class Calm extends Agent {
         return null;
     }
 
+    /** Ruch losowy gdy agent panikuje — pierwsza dostępna wolna komórka. */
     private void chaosMove() {
         List<Cell> neighbors = perceive();
         for (Cell n : neighbors) {

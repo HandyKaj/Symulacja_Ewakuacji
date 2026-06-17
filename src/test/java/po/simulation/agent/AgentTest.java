@@ -19,7 +19,6 @@ class AgentTest {
         board = new Board(10, 10);
     }
 
-    // ── Calm ──────────────────────────────────────────────────────────────────
 
     @Test
     void calmHasCorrectInitialState() {
@@ -56,7 +55,6 @@ class AgentTest {
         assertTrue(calm.getPanic() > panicBefore);
     }
 
-    // ── Panicking ─────────────────────────────────────────────────────────────
 
     @Test
     void panickingHasHighInitialPanic() {
@@ -70,7 +68,6 @@ class AgentTest {
         assertEquals(AgentState.IN_BUILDING, p.getState());
     }
 
-    // ── Injured ───────────────────────────────────────────────────────────────
 
     @Test
     void injuredHasCorrectSpeed() {
@@ -97,7 +94,6 @@ class AgentTest {
         assertFalse(injured.needsHelp());
     }
 
-    // ── Altruist ──────────────────────────────────────────────────────────────
 
     @Test
     void altruistHasCorrectInitialState() {
@@ -106,7 +102,6 @@ class AgentTest {
         assertEquals(1.0f, alt.getSpeed());
     }
 
-    // ── Firefighter ───────────────────────────────────────────────────────────
 
     @Test
     void firefighterHasCorrectInitialState() {
@@ -114,7 +109,6 @@ class AgentTest {
         assertEquals(AgentState.IN_BUILDING, ff.getState());
     }
 
-    // ── updatePanic ───────────────────────────────────────────────────────────
 
     @Test
     void panicDoesNotExceed100() {
@@ -136,7 +130,6 @@ class AgentTest {
         assertTrue(calm.getPanic() >= 0);
     }
 
-    // ── moveTo ────────────────────────────────────────────────────────────────
 
     @Test
     void agentMovesToPassableCell() {

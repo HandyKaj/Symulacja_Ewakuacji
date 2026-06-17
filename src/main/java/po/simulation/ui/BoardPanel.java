@@ -7,10 +7,19 @@ import po.simulation.model.CellType;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Panel Swing odpowiedzialny za graficzne rysowanie planszy symulacji —
+ * ściany, korytarze, ogień, wyjścia i agentów jako kolorowe kwadraty z literami.
+ */
 public class BoardPanel extends JPanel {
     private final Board board;
     private final int cs = 6;
 
+    /**
+     * Tworzy panel rysujący podaną planszę.
+     *
+     * @param b plansza do narysowania
+     */
     public BoardPanel(Board b) {
         this.board = b;
         setBackground(UIColors.BG);
@@ -29,7 +38,7 @@ public class BoardPanel extends JPanel {
                 Cell cell = board.getCell(x, y);
                 if (cell == null) continue;
                 int px = x*(cs+1), py = y*(cs+1);
-                Color color;
+                Color color;// colouring priority: wall > exit > fire > agent > empty corridor
                 if      (cell.getType() == CellType.WALL) color = UIColors.hex("#374151");
                 else if (cell.getType() == CellType.EXIT) color = UIColors.hex("#2e7d32");
                 else if (cell.hasFire()) {
@@ -42,6 +51,7 @@ public class BoardPanel extends JPanel {
                 g2.setColor(color);
                 g2.fillRoundRect(px, py, cs, cs, 1, 1);
 
+                // if there is an agent on the cell — we print the letter representing its type
                 if (cell.getAgent() != null) {
                     g2.setColor(new Color(255, 255, 255, 200));
                     String letter = cell.getAgent().getClass().getSimpleName().substring(0, 1);

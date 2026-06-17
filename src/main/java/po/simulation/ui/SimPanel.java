@@ -9,6 +9,11 @@ import java.awt.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Główny panel symulacji — zawiera boczny panel statystyk i przycisków
+ * sterujących, planszę graficzną oraz dwa wykresy (panika, statystyki wg typu).
+ * Odpowiada za logikę wykonywania ticków symulacji i odświeżanie widoku.
+ */
 public class SimPanel extends JPanel {
     private final Simulation sim;
     private final List<Integer> panicHistory;
@@ -31,6 +36,14 @@ public class SimPanel extends JPanel {
     private boolean isAutoPlaying = false;
     private Thread simThread;
 
+    /**
+     * Tworzy panel symulacji.
+     *
+     * @param sim          symulacja do wyświetlenia i kontrolowania
+     * @param panicHistory współdzielona lista historii paniki — do wykresu
+     * @param typeStats    współdzielona mapa statystyk wg typu agenta — do wykresu
+     * @param onBack       funkcja wywoływana po kliknięciu "Config" — powrót do konfiguracji
+     */
     public SimPanel(Simulation sim, List<Integer> panicHistory,
                     Map<String, int[]> typeStats, Runnable onBack) {
         this.sim = sim;
@@ -50,7 +63,12 @@ public class SimPanel extends JPanel {
         updateUI();
     }
 
-    // ── Sidebar ──────────────────────────────────────────────────────────────
+    /**
+     * Buduje boczny panel z przyciskami, statystykami i legendą kolorów.
+     *
+     * @param onBack funkcja powrotu do konfiguracji
+     * @return skonfigurowany panel boczny
+     */
     private JPanel buildSidebar(Runnable onBack) {
         JPanel side = new JPanel();
         side.setBackground(UIColors.SIDE);
@@ -103,7 +121,12 @@ public class SimPanel extends JPanel {
         return side;
     }
 
-    // ── Main area ─────────────────────────────────────────────────────────────
+    /**
+     * Buduje główny obszar widoku — planszę z możliwością przewijania
+     * oraz rząd wykresów na dole ekranu.
+     *
+     * @return skonfigurowany panel głównego obszaru
+     */
     private JPanel buildMainArea() {
         JPanel mainArea = new JPanel(new BorderLayout(0, 0));
         mainArea.setBackground(UIColors.BG);
@@ -129,7 +152,10 @@ public class SimPanel extends JPanel {
         return mainArea;
     }
 
-    // ── Tick logic ────────────────────────────────────────────────────────────
+    /**
+     * Wykonuje jeden tick symulacji, zbiera dane do wykresów
+     * (średnia panika, statystyki wg typu) i odświeża interfejs.
+     */
     private void doTick() {
         if (!sim.isRunning()) return;
         sim.step();
@@ -153,6 +179,10 @@ public class SimPanel extends JPanel {
         updateUI();
     }
 
+    /**
+     * Uruchamia automatyczne wykonywanie ticków w osobnym wątku
+     * aż do zakończenia symulacji lub kliknięcia "Stop".
+     */
     private void startAuto() {
         isAutoPlaying = true;
         btnAuto.setText("■  Stop");
@@ -169,6 +199,7 @@ public class SimPanel extends JPanel {
         simThread.start();
     }
 
+    /** Zatrzymuje automatyczne odtwarzanie i przywraca przycisk do stanu domyślnego. */
     private void stopAuto() {
         isAutoPlaying = false;
         btnAuto.setText("⟳  Auto-run");
@@ -176,6 +207,10 @@ public class SimPanel extends JPanel {
         btnTick.setEnabled(sim.isRunning());
     }
 
+    /**
+     * Odświeża wszystkie elementy interfejsu — etykiety statystyk, planszę
+     * i wykresy — na podstawie aktualnego stanu symulacji.
+     */
     public void updateUI() {
         if (sim == null || sim.getMetrics() == null) return;
         lblTick.setText("Tick: " + sim.getStepCount() + "  ·  " + (sim.isRunning() ? "Running" : "Finished"));

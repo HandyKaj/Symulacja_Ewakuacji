@@ -4,9 +4,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Panel rysujący wykres liniowy średniego poziomu paniki agentów
+ * w czasie — ostatnie 60 ticków symulacji.
+ */
 public class PanicChartPanel extends JPanel {
     private final List<Integer> panicHistory;
 
+    /**
+     * Tworzy panel wykresu połączony z historią danych paniki.
+     *
+     * @param panicHistory lista wartości średniej paniki w kolejnych tickach
+     */
     public PanicChartPanel(List<Integer> panicHistory) {
         this.panicHistory = panicHistory;
         setBackground(UIColors.BG);
@@ -22,6 +31,7 @@ public class PanicChartPanel extends JPanel {
         int pl=36, pr=12, pt=8, pb=20;
         int w = W-pl-pr, h = H-pt-pb;
 
+        // we only display the last 60 points to make the chart readable
         List<Integer> data = panicHistory.size() > 60
                 ? panicHistory.subList(panicHistory.size()-60, panicHistory.size())
                 : panicHistory;

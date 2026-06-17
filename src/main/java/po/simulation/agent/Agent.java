@@ -6,7 +6,11 @@ import po.simulation.board.Cell;
 import po.simulation.model.AgentState;
 
 import java.util.List;
-
+/**
+ * Abstrakcyjna klasa bazowa dla wszystkich agentów w symulacji ewakuacji.
+ * Każdy agent ma pozycję na planszy, poziom paniki i stan.
+ * Konkretne zachowanie jest implementowane przez podklasy.
+ */
 public abstract class Agent {
 
     protected int id;
@@ -19,6 +23,16 @@ public abstract class Agent {
     protected Board board;
     protected int stuckTicks = 0;
 
+    /**
+     * Tworzy nowego agenta i umieszcza go na podanej pozycji.
+     * Domyślny stan to IN_BUILDING, prędkość 1.0, panika 0.
+     *
+     * @param id    unikalny identyfikator agenta
+     * @param name  nazwa agenta
+     * @param board plansza na której przebywa agent
+     * @param x     początkowa współrzędna pozioma
+     * @param y     początkowa współrzędna pionowa
+     */
     public Agent(int id, String name, Board board, int x, int y) {
         this.id = id;
         this.name = name;
@@ -30,16 +44,20 @@ public abstract class Agent {
         this.state = AgentState.IN_BUILDING;
     }
 
-
+    /** Wykonuje jeden krok symulacji — implementacja zależy od typu agenta. */
     public abstract void step();
 
-    public abstract char getDisplayChar(); //name displayed insted of A for everyone
-
+/** Zwraca listę sąsiednich komórek (góra, dół, lewo, prawo). */
     public List<Cell> perceive() {
         return board.getNeighbors(x, y);
     }
 
-
+    /**
+     * Przesuwa agenta na podaną pozycję jeśli komórka jest przejezdna.
+     * Agent może wejść na wyjście nawet jeśli jest zajęte przez innego agenta.
+     * @param newX nowa współrzędna pozioma
+     * @param newY nowa współrzędna pionowa
+     */
     public void moveTo(int newX, int newY) {
         if (board.inBounds(newX, newY)) {
             Cell target = board.getCell(newX, newY);
@@ -51,7 +69,11 @@ public abstract class Agent {
         }
     }
 
-
+    /**
+     * Aktualizuje poziom paniki — rośnie o 15 za każdą sąsiednią komórkę z ogniem,
+     * maleje o 2 co tick. Wartość jest ograniczona do zakresu 0–100.
+     *  @param neighbors lista sąsiednich komórek do analizy
+     */
     public void updatePanic(List<Cell> neighbors) {
         int fireCells = 0;
         for (Cell c : neighbors) {
@@ -60,7 +82,7 @@ public abstract class Agent {
         setPanic(panic + fireCells * 15 - 2);
     }
 
-
+    /** Ewakuuje agenta jeśli stoi na polu wyjścia — usuwa go z planszy. */
     public void checkEvacuated() {
         Cell current = board.getCell(x, y);
         if (current != null && current.getType() == po.simulation.model.CellType.EXIT) {
@@ -68,7 +90,7 @@ public abstract class Agent {
             board.removeAgent(this);
         }
     }
-
+    /** @return true jeśli agent nie jest martwy */
     public boolean isAlive() {
         return state != AgentState.DEAD;
     }
