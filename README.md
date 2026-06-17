@@ -17,6 +17,7 @@ W symulacji występuje pięć typów agentów:
 Symulacja zbiera statystyki: liczbę ewakuowanych i zabitych agentów (łącznie oraz w podziale na typ), a także średni czas ewakuacji.
 
 📄 Pełny, szczegółowy opis modelu (atrybuty agentów, interakcje, reguły kroku symulacji, parametry, ograniczenia) znajduje się w pliku [`opis_symulacji.md`](opis_symulacji.md).
+📚 Wygenerowana dokumentacja JavaDoc dostępna online: [https://handykaj.github.io/Symulacja_Ewakuacji/]
 
 ## Wymagania
 
@@ -27,7 +28,7 @@ Symulacja zbiera statystyki: liczbę ewakuowanych i zabitych agentów (łącznie
 
 1. Sklonuj repozytorium:
    ```
-   git clone <adres-repozytorium>
+   git clone https://github.com/HandyKaj/Symulacja_Ewakuacji
    cd Symulacja_Ewakuacji
    ```
 
@@ -86,4 +87,5 @@ src/main/java/po/simulation/
 └── ui/                       — komponenty interfejsu graficznego
 
 src/test/java/po/simulation/  — testy jednostkowe
+docs/                          — wygenerowana dokumentacja JavaDoc (HTML)
 ```
