@@ -87,7 +87,3 @@ src/main/java/po/simulation/
 
 src/test/java/po/simulation/  — testy jednostkowe
 ```
-
-## Autorzy
-
-Projekt zaliczeniowy na przedmiot Programowanie Obiektowe.
