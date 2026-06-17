@@ -112,7 +112,9 @@ public class Simulation {
 
 
         agents.removeIf(a -> a.getState() == AgentState.EVACUATED || a.getState() == AgentState.DEAD);
-
+        if (agents.isEmpty()) {
+            isRunning = false;
+        }
     }
 
     /**

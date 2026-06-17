@@ -34,7 +34,7 @@ public class Cell {
     /** @return true jeśli na komórce nie ma agenta */
     public boolean isEmpty() { return agent == null; }
 
-    /** @return true jeśli na komórce nie ma agenta */
+    /** @return true jeśli na komórce jest aktywny ogień */
     public boolean hasFire() {
         return fire != null;
     }
